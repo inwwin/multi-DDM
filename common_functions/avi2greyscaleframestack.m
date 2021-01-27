@@ -3,6 +3,8 @@ function [ frame_stack, video ] = avi2greyscaleframestack( filename )
 %
 % Win's note:
 % This function is no longer called from anywhere else in this repo.
+% The function DDM_Analysis now used the wrapper class VideoReaderWrapper
+% instead.
 
 
 video = VideoReader(filename);
