@@ -358,13 +358,6 @@ classdef DDM_Analysis < matlab.mixin.Copyable
             clear dummy
             cprintf('*[0 .5 0]','Done!')
             
-            %% select good boxes based on thresholding of standard deviation
-            
-%             ind_good_boxes =
-%             find_good_boxes(obj.std_fs(row_offset:row_offset+row_span-1,
-%             col_offset:col_offset+col_span-1), BoxSize); %old function
-            ind_good_boxes = obj.find_boxes_with_motion(row_offset, col_offset, BoxSize);
-            
             %% saving in each Box the relative bit of std_fs
             
 %             fprintf('\n\t\tSaving portion of standard deviation of pixel intensity in time relative to each Box... ');
@@ -422,7 +415,6 @@ classdef DDM_Analysis < matlab.mixin.Copyable
             
             obj.Results(iir).row_offset = row_offset;
             obj.Results(iir).col_offset = col_offset;
-            obj.Results(iir).ind_good_boxes = ind_good_boxes;
             
         end
         
@@ -684,7 +676,7 @@ classdef DDM_Analysis < matlab.mixin.Copyable
             
             % results storage
             obj.SAVAlike.frequency_map = frequency_map;
-            obj.SAVAlike.ind_good_bins = find_good_boxes(obj.std_fs,bsz);
+            %obj.SAVAlike.ind_good_bins = find_good_boxes(obj.std_fs,bsz);
             ind = frequency_map(:) > 1 & frequency_map(:) < 30; %physical constraints
             ind = ind & obj.SAVAlike.ind_good_bins(:);          % discard empty bins by thresholding the std
             obj.SAVAlike.mean_frequency = mean(frequency_map(ind));
@@ -694,87 +686,9 @@ classdef DDM_Analysis < matlab.mixin.Copyable
             cprintf('*[0 .5 0]','\nDone!')
             
         end
-
-
-        %% find where the motion mask is true within a box
-        function mask = find_boxes_with_motion(obj, row_offset, col_offset, bsz)
-            %find_boxes_with_motion checks which ones of the bsz-by-bsz
-            %boxes is over a region detected as true by detect_motion
-            
-            % run motion detection if needed
-            if isempty(obj.detected_motion) || isempty(obj.lstd_sfd)
-                obj.motion_detection;
-            end
-            
-            row_span = floor(obj.Height / bsz) * bsz;   %number of boxes that fit (vertically) in the field of view given BoxSize
-            col_span = floor(obj.Width  / bsz) * bsz;
-
-            % chop the edges of detected motion off according to row_offset
-            % and col_offset
-            BW = obj.detected_motion(row_offset:row_offset+row_span-1,col_offset:col_offset+col_span-1);
-            
-            % prepare binning map to go from bigmask to mask, this is
-            % still common to 2 3 4 methods
-            w = size(BW,2);
-            h = size(BW,1);
-            binningmap = col2im(repmat(1:floor(w*h/bsz^2),bsz*bsz,1),...
-                bsz.*[1 1], bsz*[floor(h/bsz) floor(w/bsz)],'distinct');
-            
-            % take the box as long as there is 1 true pixel in the mask under it
-            mask = reshape(accumarray(binningmap(:), BW(:)), h/bsz, w/bsz) > 0;
-            
-        end %function
         
     end %methods
 
     
 end
-
-%% select good boxes based on thresholding of standard deviation
-
-function mask = find_good_boxes(IM, bsz, flag_ditch_imadjust)
-
-if nargin < 3 || isempty(flag_ditch_imadjust)
-    flag_ditch_imadjust = false;
-end %if
-
-IM = mat2gray(IM);      %converts to [0 1]
-[height, width] = size(IM);
-binningmap = col2im(repmat(1:floor(width*height/bsz^2),bsz*bsz,1), bsz.*[1 1], bsz*[floor(height/bsz) floor(width/bsz)],'distinct');
-
-
-if flag_ditch_imadjust
-
-    % highlight local roughness
-    fIM = stdfilt(IM, ones(5));
-    
-    % smooth it
-    sIM = mat2gray(imgaussfilt(fIM, 5));
-    saIM = imadjust(sIM, stretchlim(sIM, [0.01, 1-1e-3]));
-    
-    % global thresholding
-    [level, ~] = graythresh(saIM);
-    bigmask = imbinarize(saIM, 0.65*level);
-    bigmask = bwmorph(bigmask,'clean');
-
-    % take the box as long as there is 1 true pixel in the mask under it
-    mask = reshape(accumarray(binningmap(:), bigmask(:)), height/bsz, width/bsz) > 0;
-    
-else
-    
-    bIM = reshape( accumarray(binningmap(:),IM(:)), height/bsz, width/bsz) ./ bsz.^2;
-    abIM = imadjust(bIM);
-    mask = im2bw(abIM,min(1,graythresh(bIM)));
-
-end %if
-
-
-if bsz < 64
-    mask = bwmorph(mask,'clean'); % maybe want to think about this again
-end
-
-end
-
-
-
 
