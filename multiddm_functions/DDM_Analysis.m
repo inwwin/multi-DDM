@@ -148,78 +148,23 @@ classdef DDM_Analysis < matlab.mixin.Copyable
                 obj.set_magnification;
             end % if
 
-%             if isempty(strfind(filename,'.movie'))
-%                 disp(filename)
-%                 [fs, vi] = avi2greyscaleframestack(fullfile(obj.Filepath,obj.Filename));
-%                 obj.Height      = vi.Height;
-%                 obj.Width       = vi.Width;
-%                 obj.FrameRate   = vi.FrameRate;
-%                 if isempty(frameboundaries)
-%                     obj.LastFrame   = vi.NumberOfFrames;
-%                 else
-%                     obj.LastFrame = min(vi.NumberOfFrames,max(frameboundaries));
-%                 end
-%                 obj.TotalNumberOfFrames = vi.NumberOfFrames;
-%                 obj.NumberOfFrames = obj.LastFrame-obj.FirstFrame+1;
-%                 obj.IsMovieCorrupted = false;
-%                 fs = fs(:,:,obj.FirstFrame:obj.LastFrame);
-%                 
-%             elseif strfind(filename,'.movie')
-%                 
-%                 if ~which('moviereader')
-%                     error('Cannot open .movie videos');
-%                 else
-%                     mo = moviereader(fullfile(obj.Filepath,obj.Filename));
-%                     obj.Height      = double(mo.Height);
-%                     obj.Width       = double(mo.Width);
-%                     if isempty(frameboundaries)
-%                         obj.LastFrame   = mo.NumberOfFrames;
-%                     else
-%                         obj.LastFrame = min(mo.NumberOfFrames,max(frameboundaries));
-%                     end
-%                     obj.TotalNumberOfFrames = mo.NumberOfFrames;
-%                     
-%                     obj.load_movie;
-%                     %                     obj.FrameRate   = mo.FrameRate;
-%                     
-%                     if obj.IsMovieCorrupted    %warn user that the movie was corrupted
-%                         cprintf('*[1 .3 0]',['Movie file was corrupted, only ',num2str(obj.NumberOfFrames),' frames out of ',num2str(obj.TotalNumberOfFrames),' were read. ']);
-%                     end
-%                 end
-%                 
-%             end
             cprintf('*[0 .5 0]','Done!')
             
             %% calculating standard deviation of video  % deprecated as a motion detection algorithm but let's keep it
-            
-            fprintf('\nCalculating standard deviation of pixel intensity through time... ');
-%             std_fs = zeros(obj.Height,obj.Width,'single');
-            std_fs = zeros(obj.Height,obj.Width,'double');
-            parfor i=1:obj.Height    %doing the std of the entire video is too RAM expensive, so for loop on the rows
-%                 std_fs(i,:) = squeeze( std( single( fs(i,:,:) ) ,1,3) );
-                std_fs(i,:) = squeeze( std( double( fs(i,:,:) ) ,0,3) );
-            end
-            
-            obj.col_sum_std_fs = sum(std_fs,1); %sum of each column of std (vertically), it's a row vector
-            obj.row_sum_std_fs = sum(std_fs,2); %sum of each row of std (horizontally), it's a column vector
-            
-            obj.std_fs  = std_fs;   %had to do this 'cause parfor doesn't like to operate on obj.fs
-            
-            cprintf('*[0 .5 0]','Done!')
-            
-            
+	    % Win: Let's not do this, this procedure is removed.
+
             %% call new motion detection algorithm
             
-            obj.motion_detection;
+	    % this require the standard deviation data, which is removed
+            %obj.motion_detection;
             
-            obj.col_sum_lstd_sfd = sum(obj.lstd_sfd,1);     % sum of each column of lstd_sfd (vertically), it's a row vector
-            obj.row_sum_lstd_sfd = sum(obj.lstd_sfd,2);     % sum of each column of lstd_sfd (horizontally), it's a column vector
+            %obj.col_sum_lstd_sfd = sum(obj.lstd_sfd,1);     % sum of each column of lstd_sfd (vertically), it's a row vector
+            %obj.row_sum_lstd_sfd = sum(obj.lstd_sfd,2);     % sum of each column of lstd_sfd (horizontally), it's a column vector
             
             
             %% initialising some global parameters
             obj.max_tau = floor(obj.NumberOfFrames/2);
             obj.max_tau_fitted = floor(obj.max_tau/2); %default, maybe change in future
-            obj.set_temperature;
         end
         
         %% method that launches DDM on boxsizes specified by input vector
@@ -568,72 +513,6 @@ classdef DDM_Analysis < matlab.mixin.Copyable
             fs = obj.vid.read;
         end % function
         
-%         function [obj, movie_correctly_read] = load_movie(obj)
-%             
-%             movie_correctly_read = false;   %control variable for failsafe movie reading
-%             
-%             global fs;
-%             if isprop(obj,'Filepath')
-%                 fullpath = fullfile(obj.Filepath,obj.Filename);
-%             else
-%                 fullpath = obj.Filename;
-%             end
-%             
-%             [~,~,ext] = fileparts(fullpath);
-%             
-%             if strcmp(ext,'.movie')
-%                 try
-%                     mo = moviereader(fullpath);
-%                 catch
-%                     cprintf('Red','The movie is not present at the path specified ');
-%                     return
-%                 end
-%                 
-%                 obj.IsMovieCorrupted = false;
-%                 
-%                 while movie_correctly_read == false %try to read the movie until it works
-%                     try
-%                         fs = mo.read([obj.FirstFrame obj.LastFrame]);  %try to read the movie
-%                         movie_correctly_read = true;        %if it works put flag to 1
-%                         
-%                     catch err                               %if it doesn't work, then
-%                         if strcmp(err.identifier,'moviereader:WrongMagicAtFrame')
-%                             obj.LastFrame = str2double(err.message)-1;  %try to read again, ditching the last frame (I guess I could use a "finding" algorithm here)
-%                         else
-%                             obj.LastFrame = obj.LastFrame - 1;
-%                         end
-%                         obj.IsMovieCorrupted = true;        %set the flag that the movie was corrupted
-%                         
-%                     end                                     %and try again
-%                     
-%                 end
-%                 
-%                 
-%                 fs(:,:,end) = []; %ditches the last frame anyway, which may still be corrupted
-%                 obj.LastFrame = obj.LastFrame - 1;
-%                 
-%                 if obj.IsMovieCorrupted
-%                     cprintf('Red','The movie is corrupted ')
-%                 end
-%                 
-%                 
-%                 
-%                 obj.FrameRate   = mo.FrameRate;
-%                 obj.NumberOfFrames = obj.LastFrame - obj.FirstFrame + 1;
-%                 
-%                 
-%                 
-%             else
-%                 fs = avi2greyscaleframestack(fullpath);
-%                 fs = fs(:,:,obj.FirstFrame:obj.LastFrame);
-%             end
-%             
-%             if obj.NumberOfFrames ~= size(fs,3)
-%                 error('mistake here')
-%             end
-%             
-%         end
-        
         %% parse filename for magnification string
         function obj = set_magnification(obj)
             
@@ -815,156 +694,8 @@ classdef DDM_Analysis < matlab.mixin.Copyable
             cprintf('*[0 .5 0]','\nDone!')
             
         end
-        
-        %% read temperature file
-        function obj = set_temperature(obj, channel)
-            %set_temperature read temperature from companion case (only if
-            %video was in .movie format)
-            [~,~,movie_ext] = fileparts(obj.Filename);
-            if ~strcmp(movie_ext, '.movie')
-                return
-            end % if
-            
-            if nargin < 2
-                channel = 0; % select TC1
-            end
-            channel = channel + 2; %to take into account the time vector column and C notation
-            
-            TemperatureFilename = strrep(obj.Filename, movie_ext, '.temperature');
-            if isprop(obj,'Filepath')
-                TemperatureFilename = fullfile(obj.Filepath,TemperatureFilename);
-            end
-            if isempty(dir(TemperatureFilename))
-                fprintf('\n');
-                cprintf('*[1 .3 0]',regexprep(['Temperature file not found at ',TemperatureFilename],'\','\\\\'));
-            else
-                try
-                    dummy = importdata(TemperatureFilename);
-                    if ~isempty(dummy)
-                        %assuming the temperature time vector is ~ as long as true
-                        %time vector
-                        dt = obj.NumberOfFrames/obj.FrameRate/size(dummy.data,1);
-                        obj.Temperature.TimeVec = dt * (dummy.data(:,1) - dummy.data(1,1)); %time vector (in the temperature file is in units of 0.1s and with god-knows-what offset)
-                        obj.Temperature.TempVec = dummy.data(:,channel);
-                        obj.Temperature.MeanTemp = mean(obj.Temperature.TempVec);
-                    else
-                        cprintf('*[1 .3 0]','Temperature file empty.');
-                    end
-                catch
-                    cprintf('*[1 .3 0]','Reading Temperature file failed.');
-                end
-            end
-        end
-        
-        
-        
-        %% better movement finder       
-        function obj = motion_detection(obj, flag_legacy)
-            % starting from the first second of video, find areas with
-            % cilia beating
-            
-            if nargin < 2 || isempty(flag_legacy)
-                flag_legacy = false;
-            end
-            
-            sfwsz = 11;                 % size of the stdfiltering window
-                
-            nbins_greylevels = 512;     % number of bins for grey level histogram
 
-            if isempty(obj.lstd_sfd)
-                
-                
-                % check if video is loaded, else load the first 1 second
-                if ~exist('fs','var')
-                    fprintf('\nAccessing global variable fs... ');
-                    global fs;
-                    if isempty(fs)
-                        fprintf('fs was empty, reading the first 1s of the movie now... ');
-                    
-                        % read the first second
-                        try
-                            fs = obj.vid.read([1 round(obj.FrameRate)]);
-                        catch EE
-                            disp('Error trying to read:')
-                            disp(fullfile(obj.Filepath, obj.Filename))
-                            error(EE.message)
-                        end
-                    end % if isempty
-                    
-                end %if ~exist
-                
-                % initialise stack
-                nf = min(size(fs,3), round(obj.FrameRate)) -2; % 1 s worth, or all video
-                sfd = zeros([obj.Height, obj.Width, nf], 'single'); %stdfiltered diffs
-                for i = size(sfd,3):-1:1
-                    sfd(:,:,i) = single(stdfilt( medfilt2( diff(single(fs(:,:,[i,i+2])),1,3) ,'symmetric') , ones(sfwsz)));
-                end %for
-                
-                % now take std in time
-                std_sfd = std(sfd,0,3);
-                std_sfd(std_sfd == 0) = min(std_sfd(std_sfd>0)); % prevents an error if the video was saturated
-                obj.lstd_sfd = mat2gray(log10( std_sfd ));       % log on graylevels, deals better with peak colours
-                
-                % fix the very high values at the very edges
-                mm = min(obj.lstd_sfd(:));
-                obj.lstd_sfd([1:ceil(sfwsz/2), end-floor(sfwsz/2):end], :) = mm;
-                obj.lstd_sfd(:, [1:ceil(sfwsz/2), end-floor(sfwsz/2):end]) = mm;
-                
-                
-            end %if no log motion map
-            
-            if flag_legacy
-                
-                cprintf('*[1 .3 0]','Using legacy motion detection')
-                level = graythresh(obj.lstd_sfd(ceil(sfwsz/2)+1:end-ceil(sfwsz/2),ceil(sfwsz/2)+1:end-ceil(sfwsz/2)));
-                level = 0.7 * level;
-                obj.detected_motion = imopen(imbinarize(obj.lstd_sfd, level),strel('disk',9));
-                
-            else
-                
-                % fit the histogram of grey levels of lstd_sfd
-                % with a gaussian, then put to minimum all the points
-                % within a sigms of the main peak which is usually the
-                % background
-                [yhist, xhist] = histcounts(obj.lstd_sfd(:), linspace(0, 1, nbins_greylevels + 1),...
-                    'normalization','probability');
-                yhist = yhist(:);
-                xhist = xhist(:);
-                xhist = (xhist(1:end-1)+xhist(2:end))/2;
-                
-                % initial values for fitting
-                [a0, b0] = findpeaks(smooth(yhist),xhist,...
-                    'NPeaks',1,'MinPeakHeight',0.5e-3);
-                c0 = 0.1;
-                
-                % fitting
-                ft = fittype('gauss1');
-                fo = fitoptions('method','nonlinearleastsquares',...
-                    'startpoint',[a0, b0, c0],...
-                    'Upper',[1 1 1],'lower',[0 0 0]);
-                idx_to_fit = xhist<=b0+c0/sqrt(2);
-                idx_to_fit(1) = false;  %because of edges, this is overly populated
-                fit_out = fit(xhist(idx_to_fit),yhist(idx_to_fit),ft,fo);
-                sgm = fit_out.c1/sqrt(2);
-                
-                % now find background, put it to min
-                bg = obj.lstd_sfd <= fit_out.b1+2*sgm;
-                bg = imclose(bg,strel('disk',9));
-                
-                
-                % if this failed call legacy method
-                if any(~bg(:)) % all's well
-                    % binarise
-                    obj.detected_motion = ~bg;
-                else
-                    obj.motion_detection(true);
-                end
-                
-            end % if flag_legacy
-            
-        end %function
-        
-        
+
         %% find where the motion mask is true within a box
         function mask = find_boxes_with_motion(obj, row_offset, col_offset, bsz)
             %find_boxes_with_motion checks which ones of the bsz-by-bsz
