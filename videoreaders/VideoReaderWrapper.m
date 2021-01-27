@@ -66,8 +66,10 @@ classdef VideoReaderWrapper < matlab.mixin.Copyable
             % how to treat each frame
             switch obj.vo.VideoFormat
                 case 'RGB24'
+	            disp('Using RGB24 VideoFormat');
                     squeezing_func = @rgb2gray;
                 case 'Grayscale'
+	            disp('Using Grayscale VideoFormat');
                     squeezing_func = @squeeze;
                 otherwise
                     warning('Unexpected VideoFormat. Modify the function accordingly.');
