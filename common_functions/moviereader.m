@@ -1,4 +1,9 @@
 % A very Basic Matlab interface to the .movie binary files
+%
+% Win's note:
+% It only works with the .movie files used by Pietro's group.
+% It contains one constructor and one ordinary method for
+% reading all frames into memory.
 classdef moviereader < handle
     
     % movie properties and data

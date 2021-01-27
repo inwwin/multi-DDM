@@ -1,9 +1,12 @@
 function [ frame_stack, video ] = avi2greyscaleframestack( filename )
 %avi2framestack Converts avi files to a 3D matrix
+%
+% Win's note:
+% This function is no longer called from anywhere else in this repo.
 
 
 video = VideoReader(filename);
-video_data = video.read;
+video_data = video.read; % load the entire video into memory
 frame_stack = zeros(video.Height, video.Width, video.NumberOfFrames,'uint8');
 VideoFormat = video.VideoFormat;
 

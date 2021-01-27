@@ -1,3 +1,7 @@
+## About this branch
+> This supplementary branch is for studying the codes in the original repo.
+> It contains useful comments and some pieces of investigative codes.
+
 # Multi-DDM Analysis
 
 This file provides a simple guide to running multi-DDM on a series of videos, using the enclosed MATLAB functions. While the code in this package has been developed to analyse videos of ciliated epithelia at ALI culture, multi-DDM is a far more general technique that can be employed in a variety of scenarios.

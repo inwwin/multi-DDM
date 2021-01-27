@@ -2,6 +2,11 @@ function [ Iqtau, cccount ] = DDM_core( frame_stack, N_couple_frames_to_average,
 % function [ Iqtau, Angular_average ] = DDM_core( frame_stack, N_couple_frames_to_average )
 %DDM_core Computational core for DDM calculation
 %   Detailed explanation goes here
+%
+% Win's note:
+% This function is no longer directly called from anywhere else in this repo.
+% It used to be called in a commented part of DDM_Analysis.m.
+% Now DDM_Analysis.m only calls multiDDM_core.
 
 
 %{
