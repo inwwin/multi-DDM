@@ -112,6 +112,9 @@ classdef DDM_Analysis < matlab.mixin.Copyable
             if isempty(frameboundaries)
                 firstframe = [];
                 lastframe = [];
+	    else
+	        firstframe = frameboundaries(1);
+		lastframe = frameboundaries(2);
             end
             
             fprintf('\nLoading file... ');
