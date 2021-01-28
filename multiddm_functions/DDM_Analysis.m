@@ -113,6 +113,9 @@ classdef DDM_Analysis < matlab.mixin.Copyable
                 firstframe = [];
                 lastframe = [];
             end
+	    % potential bug:
+	    % If framboundaries is non-empty, firstframe and lastframe
+	    % will not yet be initialised.
             
             fprintf('\nLoading file... ');
             
@@ -293,6 +296,7 @@ classdef DDM_Analysis < matlab.mixin.Copyable
                 BoxSize = boxsizevect(i);
                 fprintf(['\n\tSetting up data structure for Analysis with BoxSize = ',num2str(BoxSize)]);
                 obj.Results(j).BoxSize = BoxSize;
+		% ===== 1) setup_DDM_on_Boxes =====
                 obj.setup_DDM_on_Boxes(BoxSize);
                 retrieved_max_mode_fitted = numel(obj.Results(j).Box(1).Frequency);
                 obj.Results(j).qVec = 2*pi*(1:retrieved_max_mode_fitted)./BoxSize; %good for plotting, have to retrieve up until which mode I fitted the Iqtau because it is not a property of the class
@@ -303,6 +307,7 @@ classdef DDM_Analysis < matlab.mixin.Copyable
             if ~isempty(boxsizevect)
                 fprintf('\n\tRunning multiDDM algorithm on all boxes... ');
                 ind_to_run = N_existing_entries+1 : N_existing_entries+numel(boxsizevect);
+		% ===== 2) multiDDM_core =====
                 obj.Results(ind_to_run) = ...
                     multiDDM_core(fs, obj.N_couple_frames_to_average, obj.Results(ind_to_run));
                 cprintf('*[0 .5 0]','Done!');
@@ -312,6 +317,7 @@ classdef DDM_Analysis < matlab.mixin.Copyable
             for i = 1:N_boxsizes
                 BoxSize = boxsizevect(i);
                 fprintf(['\n\tStarting fit of boxes of BoxSize = ',num2str(BoxSize)]);
+		% ===== 3) fit_Boxes =====
                 obj.fit_Boxes(BoxSize);
                 fprintf('\n\tDone');
             end
@@ -418,6 +424,7 @@ classdef DDM_Analysis < matlab.mixin.Copyable
             ind_good_boxes = obj.find_boxes_with_motion(row_offset, col_offset, BoxSize);
             
             %% saving in each Box the relative bit of std_fs
+	    % isn't really used anymore
             
 %             fprintf('\n\t\tSaving portion of standard deviation of pixel intensity in time relative to each Box... ');
             for i = 1:N_Boxes_row
@@ -516,6 +523,7 @@ classdef DDM_Analysis < matlab.mixin.Copyable
         end %function
         
         %% interactive creation of kymograph
+	% kymograph is a time vs position graph
         function obj = kymograph(obj,N_kymographs)
             
             if nargin==1
