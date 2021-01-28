@@ -337,79 +337,26 @@ classdef DDM_Analysis < matlab.mixin.Copyable
             % maximise the signal we're analysing. this section just uses the standard
             % deviation of the video to detect the most active region
             
-            fprintf('\n\t\tChoosing ROI placement... ');
-            
-            col_span = N_Boxes_col * BoxSize;     %Width of total DDM-analysed region (multiple of BoxSize)
-            row_span = N_Boxes_row * BoxSize;    %Height of total DDM-analysed region (multiple of BoxSize)
-            
-            %find where to place (in the horizontal direction) the [row_span, col_span] region to be DDM-analysed
-            for i = obj.Width - col_span + 1 : -1 : 1  %sneaky allocation
-%                 dummy(i) = sum(obj.col_sum_std_fs(i:i+col_span-1));
-                dummy(i) = sum(obj.col_sum_lstd_sfd(i:i+col_span-1));
-            end
-            [~,col_offset] = max(dummy);
-            clear dummy
-            %find where to place (in the vertical direction) the [row_span, col_span] region to be DDM-analysed
-            for i = obj.Height - row_span + 1 : -1 : 1  %sneaky allocation
-%                 dummy(i) = sum(obj.row_sum_std_fs(i:i+row_span-1));
-                dummy(i) = sum(obj.row_sum_lstd_sfd(i:i+row_span-1));
-            end
-            [~,row_offset] = max(dummy);
-            clear dummy
+            fprintf('\n\t\tChoosing ROI placement... (Hard code zeroes)');
+            %col_span = N_Boxes_col * BoxSize;     %Width of total DDM-analysed region (multiple of BoxSize)
+            %row_span = N_Boxes_row * BoxSize;    %Height of total DDM-analysed region (multiple of BoxSize)
+	    % let's used zero col_offset and row_offset instead of
+	    % the original wiggle technique (Please see the original code)
+	    col_offset = 0;
+	    row_offset = 0;
             cprintf('*[0 .5 0]','Done!')
             
             %% saving in each Box the relative bit of std_fs
+	    % seem not in used. So comment out.
             
-%             fprintf('\n\t\tSaving portion of standard deviation of pixel intensity in time relative to each Box... ');
-            for i = 1:N_Boxes_row
-                for j = 1:N_Boxes_col
-                    
-                    ii = sub2ind([N_Boxes_row, N_Boxes_col], i, j);
-                    obj.Results(iir).Box(ii).std_fs = [];
-                    obj.Results(iir).Box(ii).lstd_sfd = [];
-%                     obj.Results(iir).Box(ii).std_fs = obj.std_fs(row_offset + (i-1)*BoxSize : row_offset + (i)*BoxSize -1 ,...
-%                         col_offset + (j-1)*BoxSize : col_offset + (j)*BoxSize -1);
-%                     obj.Results(iir).Box(ii).lstd_sfd = obj.lstd_sfd(row_offset + (i-1)*BoxSize : row_offset + (i)*BoxSize -1 ,...
-%                         col_offset + (j-1)*BoxSize : col_offset + (j)*BoxSize -1);
-                end
-            end
-%             cprintf('*[0 .5 0]','Done!')
-            
-            %% running DDM on each region of the video, storing Iqtaus in relative Box
-            % not done here anymore, see end of Variable_BoxSize_analysis
-            %{
-            fprintf('\n\t\tRunning DDM algorithm on each Box... ');
-            fprintf('\n\t\t\tAnalysing Box ');
-            for j = 1:N_Boxes_col
-                for i = 1:N_Boxes_row
-                    
-                    ii = sub2ind([N_Boxes_row, N_Boxes_col], i, j);
-                    fprintf('%.6d / %.6d',ii,N_Boxes);
-                    obj.Results(iir).Box(ii).Iqtau = DDM_core(fs(row_offset + (i-1)*BoxSize : row_offset + (i)*BoxSize -1 ,...
-                        col_offset + (j-1)*BoxSize : col_offset + (j)*BoxSize -1,:),obj.N_couple_frames_to_average);
-                    fprintf('\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b')
-                end
-            end
-            fprintf('\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b') % deletes "Analysing Box"
-            
-            cprintf('*[0 .5 0]','Done!');
-            %}
-            
-            %% running fit_Iqtau_ourcilia on each Box.Iqtau
-            % not done here anymore, see end of Variable_BoxSize_analysis
-            %{
-            fprintf('\n\t\tFitting Iqtau matrix for each Box... ');
-            fprintf('\n\t\t\tFitting Box ');
-            for ii = 1:N_Boxes
-                
-                fprintf('%.6d / %.6d',ii,N_Boxes);
-                [obj.Results(iir).Box(ii).Frequency, obj.Results(iir).Box(ii).Damping, obj.Results(iir).Box(ii).Amplitude, obj.Results(iir).Box(ii).Offset, obj.Results(iir).Box(ii).GOF] = fit_Iqtau_ourcilia(obj.Results(iir).Box(ii).Iqtau, max_mode_fitted, obj.max_tau_fitted);
-                fprintf('\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b')
-            end
-            fprintf('\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b') % deletes "fitting box"
-            
-            cprintf('*[0 .5 0]','Done!');
-            %}
+            %for i = 1:N_Boxes_row
+            %    for j = 1:N_Boxes_col
+            %        
+            %        ii = sub2ind([N_Boxes_row, N_Boxes_col], i, j);
+            %        obj.Results(iir).Box(ii).std_fs = [];
+            %        obj.Results(iir).Box(ii).lstd_sfd = [];
+            %    end
+            %end
             
             %% saving parameters in results
             
