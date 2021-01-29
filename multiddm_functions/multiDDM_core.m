@@ -137,12 +137,16 @@ for tau = 1:max_tau
         % now take the right fft of the right bit for each box
         for rc = 1:N_boxsizes
             
+	    % extract only the relevent field from the frames
             tempdiff_chunk = tempdiff(row_offset(rc):row_offset(rc)+row_span(rc)-1,...
                 col_offset(rc):col_offset(rc)+col_span(rc)-1);
             
-            % reshape into 3d stack for fast fft2
-            tempdiff_stack = reshape(permute(...
-                reshape(tempdiff_chunk, row_span(rc), boxsize_vector(rc),[]), [2 1 3]),...
+            % reshape into 3d stack for fast fft2 (of boxsize*boxsize)
+            tempdiff_stack = reshape(...
+		permute(...
+		    ...arrange row by row
+                    reshape(tempdiff_chunk, row_span(rc), boxsize_vector(rc),[]),...
+	            [2 1 3]),...
                 boxsize_vector(rc), boxsize_vector(rc), []);
             
             % fft2 of difference image
@@ -178,6 +182,8 @@ for tau = 1:max_tau
             % radial average (no need to store this
             oneD_power_spectrum = ...
                 accumarray(DRes(rc).distance_map,...
+		...reshape into a column vector (the same as distance_map)
+		...this is required by accumarray
                 reshape(DRes(rc).averaged_abs_FT_diff_image(:,:,bc),[],1) )./ ...
                 DRes(rc).dist_counts;	% radial average
             
@@ -193,13 +199,16 @@ for tau = 1:max_tau
     
     
 
-end
+end %for tau
 
 end %multiDDM_core
 
 
 function [distance_map, dist_counts] = distmapfun(frame_size)
 %distance map for fast radial average
+%This function build a 2D map of distance from the centre of fourier space,
+%and then fftshift it and rearrage it as a column vector, which is the form
+%required by accumarray function.
 
 jj = repmat((1:frame_size),frame_size,1);
 ii=jj';
@@ -213,17 +222,24 @@ end %function
 
 
 function ind_frames = choose_ind_frames(tau, N_couple_frames_to_average, N_frames)
-%choose_ind_frames returns the index of frames to use for subtracting
+%choose_ind_frames returns the index of frames to use for subtracting which will
+% later be averaged.
+% N_couple_frames_to_average represents the maximum number of framesset that is
+% acceptable to use for averaging.
 
 if isa(N_couple_frames_to_average,'char')
     
+    % sampling every single frames
     ind_frames = 1:N_frames - tau;
     
 else
     
+    % either sampling uniformly in tau interval
     ind_frames_1 = randi(tau,1):tau:N_frames-tau;
+    % or sampling randomly, max number of samples is N_couple_frames_to_average
     ind_frames_2 = randi(N_frames-tau,[1,N_couple_frames_to_average]);
     
+    % choose whichever has smaller sample size
     if numel(ind_frames_2)<numel(ind_frames_1)
         ind_frames = ind_frames_2;
     else
